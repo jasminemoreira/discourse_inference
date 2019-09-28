@@ -1,5 +1,7 @@
-# install.packages("Rcpp", dependencies = TRUE)
-# install.packages("pkgconfig", dependencies = TRUE)
+#install.packages("installr")
+#library(installr)
+#updateR()
+
 # install.packages("pdftools")
 # install.packages("tibble")
 # install.packages("tidytext")
@@ -25,21 +27,17 @@ library(igraph)
 library(ggraph)
 library(widyr)
 
-stopwords_pt <- read_delim("C:\\Users\\Aluno\\Desktop\\stopwords.csv",
+stopwords_pt <- read_delim("C:\\Users\\11459\\Desktop\\stopwords.csv",
                            ";",escape_double = FALSE, trim_ws = TRUE)
 
-affin_pt <- read_delim("C:\\Users\\Aluno\\Desktop\\affin_pt.csv",
-                           ";",escape_double = FALSE, trim_ws = TRUE)
+stopwords_pt <- add_row(stopwords_pt, word = "disse")
+stopwords_pt <- add_row(stopwords_pt, word = "pode")
+stopwords_pt <- add_row(stopwords_pt, word = "poderia")
+stopwords_pt <- add_row(stopwords_pt, word = "fazer")
 
-
-text <- paste(pdf_text("C:\\Users\\Aluno\\Desktop\\minhabase\\conae\\doc_referencia_conae_2018.pdf")," ")
+text <- paste(pdf_text("C:\\Users\\11459\\Desktop\\bicent.pdf")," ")
 text <- unlist(strsplit(text,"[.]"))
 text <- tibble(sentence = text) 
-
-text$sentence <- text$sentence %>%
-  removePunctuation() %>%
-  stripWhitespace() %>%
-  removeNumbers()
 
 tokens <- text %>%
   mutate(linenumber = row_number()) %>%
@@ -53,14 +51,16 @@ wordcloud(tokens_count$word, tokens_count$n,
           max.words = 50, scale = c(2,0.5),
           colors = brewer.pal(10, "Spectral"))
 
+numRegister <- 18
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(numRegister)
 tokens_count %>%
   mutate(word = reorder(word,n)) %>%
-  head(9) %>%
+  head(numRegister) %>%
   ggplot(aes(word,n,fill=factor(word)))+
-    scale_fill_brewer(palette="Purples")+
-    geom_col()+
-    xlab(NULL)+
-    coord_flip()
+  scale_fill_manual(values = mycolors) +
+  geom_col()+
+  xlab(NULL)+
+  coord_flip()
 
 
 bigrams <- text %>%
@@ -71,22 +71,17 @@ bigrams <- text %>%
   unite(bigram,word1,word2,sep = " ") %>%
   count(bigram, sort = TRUE)
 
-bigrams_graph <- bigrams %>%
-  separate(bigram,c("word1","word2"), sep = " ") %>%
-  filter(n>5) %>%
-  graph_from_data_frame()
+numRegister <- 15
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(numRegister)
+bigrams %>%
+  mutate(bigram = reorder(bigram,n)) %>%
+  head(numRegister) %>%
+  ggplot(aes(bigram,n,fill=factor(bigram)))+
+  scale_fill_manual(values = mycolors) +
+  geom_col()+
+  xlab(NULL)+
+  coord_flip()
 
-set.seed(2019)
-a <- grid::arrow(type = "closed", 
-                 length = unit(.15,"inches"))
-ggraph(bigrams_graph, layout = "fr")+
-  geom_edge_link(aes(edge_alpha = n), 
-                 show.legend = FALSE,
-                 arrow = a,
-                 end_cap = circle(.07,"inches"))+
-  geom_node_point(color="lightblue",size=5)+
-  geom_node_text(aes(label=name), vjust = 1, hjust = 1)+
-  theme_void()
 
 trigrams <- text %>%
   unnest_tokens(trigram, sentence, token = "ngrams", n = 3) %>%
@@ -96,19 +91,20 @@ trigrams <- text %>%
   unite(trigram,word1,word2,word3,sep = " ") %>%
   count(trigram, sort = TRUE)
 
-trigrams_graph <- trigrams %>%
-  separate(trigram,c("word1","word2","word3"), sep = " ") %>%
-  filter(n>3) %>%
-  graph_from_data_frame()
+numRegister <- 15
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(numRegister)
+trigrams %>%
+  mutate(bigram = reorder(trigram,n)) %>%
+  head(numRegister) %>%
+  ggplot(aes(bigram,n,fill=factor(trigram)))+
+  scale_fill_manual(values = mycolors) +
+  geom_col()+
+  xlab(NULL)+
+  coord_flip()
 
-ggraph(trigrams_graph, layout = "fr")+
-  geom_edge_link(aes(edge_alpha = n), 
-                 show.legend = FALSE,
-                 arrow = a,
-                 end_cap = circle(.07,"inches"))+
-  geom_node_point(color="lightblue",size=5)+
-  geom_node_text(aes(label=name), vjust = 1, hjust = 1)+
-  theme_void()
+
+
+
 
 word_cors <- tokens %>%
   group_by(word) %>%
