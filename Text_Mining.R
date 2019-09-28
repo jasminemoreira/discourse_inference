@@ -26,6 +26,7 @@ library(tidyr)
 library(igraph)
 library(ggraph)
 library(widyr)
+library(stringr)
 
 stopwords_pt <- read_delim("C:\\Users\\11459\\Desktop\\stopwords.csv",
                            ";",escape_double = FALSE, trim_ws = TRUE)
@@ -38,6 +39,7 @@ stopwords_pt <- add_row(stopwords_pt, word = "fazer")
 text <- paste(pdf_text("C:\\Users\\11459\\Desktop\\bicent.pdf")," ")
 text <- unlist(strsplit(text,"[.]"))
 text <- tibble(sentence = text) 
+text$sentence <- str_replace(text$sentence,"tam-\nbém", "também")
 
 tokens <- text %>%
   mutate(linenumber = row_number()) %>%
@@ -102,14 +104,24 @@ trigrams %>%
   xlab(NULL)+
   coord_flip()
 
-
-
-
-
 word_cors <- tokens %>%
   group_by(word) %>%
   filter(n()>3) %>%
   pairwise_cor(word,linenumber,sort = TRUE)
+
+
+word_cors %>%
+  filter(correlation != Inf) %>%
+  filter(correlation > .6) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout = "fr")+
+  geom_edge_link(aes(edge_alpha = correlation), 
+                 show.legend = FALSE,
+                 arrow = a,
+                 end_cap = circle(.07,"inches"))+
+  geom_node_point(color="#CC00AA",size=5)+
+  geom_node_text(aes(label=name), vjust = 1, hjust = 1)+
+  theme_void()
   
 word_cors %>%
   filter(correlation != Inf) %>%
