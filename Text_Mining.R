@@ -1,4 +1,5 @@
 #install.packages("installr")
+#install.packages("stringr")
 #library(installr)
 #updateR()
 
