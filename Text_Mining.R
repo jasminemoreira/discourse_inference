@@ -1,7 +1,7 @@
-#install.packages("installr")
-#install.packages("stringr")
-#library(installr)
-#updateR()
+# install.packages("installr")
+# install.packages('stringr')
+# library(installr)
+# updateR()
 
 # install.packages("pdftools")
 # install.packages("tibble")
@@ -14,7 +14,12 @@
 # install.packages("igraph")
 # install.packages("ggraph")
 # install.packages("widyr")
+#install.packages("topicmodels")
+#install.packages("ldatuning")
 
+
+library(topicmodels)
+library(ldatuning)
 library(pdftools)
 library(tibble)
 library(dplyr)
@@ -29,7 +34,7 @@ library(ggraph)
 library(widyr)
 library(stringr)
 
-stopwords_pt <- read_delim("C:\\Users\\11459\\Desktop\\stopwords.csv",
+stopwords_pt <- read_delim("C:\\Users\\Aluno\\Desktop\\stopwords.csv",
                            ";",escape_double = FALSE, trim_ws = TRUE)
 
 stopwords_pt <- add_row(stopwords_pt, word = "disse")
@@ -37,7 +42,7 @@ stopwords_pt <- add_row(stopwords_pt, word = "pode")
 stopwords_pt <- add_row(stopwords_pt, word = "poderia")
 stopwords_pt <- add_row(stopwords_pt, word = "fazer")
 
-text <- paste(pdf_text("C:\\Users\\11459\\Desktop\\bicent.pdf")," ")
+text <- paste(pdf_text("C:\\Users\\Aluno\\Desktop\\bicent.pdf")," ")
 text <- unlist(strsplit(text,"[.]"))
 text <- tibble(sentence = text) 
 text$sentence <- str_replace(text$sentence,"tam-\nbém", "também")
@@ -123,7 +128,7 @@ word_cors %>%
   geom_node_point(color="#CC00AA",size=5)+
   geom_node_text(aes(label=name), vjust = 1, hjust = 1)+
   theme_void()
-  
+
 word_cors %>%
   filter(correlation != Inf) %>%
   filter(correlation > .6) %>%
@@ -142,7 +147,61 @@ affin <- tokens %>%
   count(index=linenumber %% 80, sentiment) %>%
   spread(sentiment,n,fill=0) %>%
   mutate(sentiment = positivo - negativo) #%>%
-  #mutate(sentiment = sign(sentiment)*log(abs(sentiment)+1))
+#mutate(sentiment = sign(sentiment)*log(abs(sentiment)+1))
 
 ggplot(affin, aes(index,sentiment))+
   geom_col(show.legend = TRUE)
+
+
+
+
+#Análise de Tópicos
+dtm <- tokens %>%
+  count(linenumber,word, sort=TRUE) %>%
+  cast_dtm(linenumber,word,n) 
+
+result <- FindTopicsNumber(
+  dtm,
+  topics = seq(from = 2, to = 30, by = 1),
+  metrics = c("Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 77),
+  mc.cores = 2L,
+  verbose = TRUE
+)
+
+FindTopicsNumber_plot(result)
+
+
+# Latent Dirichlet Allocation - separa os textos por assuntos
+corpus_lda <- dtm %>%
+  LDA(k=10,control=list(seed=1234))
+
+get_terms(corpus_lda, 15)
+
+corpus_topics <- tidy(corpus_lda,matrix="beta")
+corpus_top_terms <- corpus_topics %>%
+  group_by(topic) %>%
+  top_n(15,beta) %>%
+  arrange(topic, -beta) %>%
+  do(head(., n = 15)) %>%
+  ungroup() %>%
+  mutate(term=reorder(term,beta)) %>%
+  mutate(order = row_number())
+
+corpus_top_terms %>%
+  ggplot(aes(order, beta, fill = factor(topic))) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free", nrow = 3) +
+  xlab("Termos") +
+  ylab("Beta") +
+  scale_x_continuous(
+    breaks = corpus_top_terms$order,
+    labels = corpus_top_terms$term,
+    expand = c(0,0),
+    trans = "reverse"
+  )+
+  coord_flip()
+
+
+
