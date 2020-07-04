@@ -8,6 +8,7 @@
 #install.packages("widyr")
 #install.packages("ggraph")
 #install.packages("igraph")
+#install.packages("topicmodels")
 library("pdftools")
 library("tibble")
 library("dplyr")
@@ -19,6 +20,7 @@ library("tidyr")
 library("widyr")
 library("ggraph")
 library("igraph")
+library("topicmodels")
 
 # Leitura do PDF
 text <- pdf_text("/Users/jasmine/Desktop/biblia.pdf")
