@@ -118,6 +118,7 @@ trigrams %>%
 
 #Cálculo da Correlação de Pares
 word_cors <- tokens %>%
+  anti_join(stopwords_pt) %>%
   group_by(word) %>%
   filter(n()>3) %>%
   pairwise_cor(word,linenumber,sort = TRUE)
