@@ -17,7 +17,6 @@
 # install.packages("ldatuning")
 # install.packages("purrr")
 
-
 library(pdftools)
 library(tibble)
 library(tidytext)
@@ -27,6 +26,7 @@ library(readr)
 library(wordcloud)
 library(tidyr)
 library(widyr)
+library(tm)
 
 #Carregar stop words
 stopwords_pt <- read_delim("C:\\Users\\jasmi\\OneDrive\\Área de Trabalho\\PLN RV\\stopwords.csv",
@@ -40,6 +40,11 @@ affin_pt <- read_delim("C:\\Users\\jasmi\\OneDrive\\Área de Trabalho\\PLN RV\\a
 text <- pdf_text("C:\\Users\\jasmi\\OneDrive\\Área de Trabalho\\PLN RV\\senhor_aneis_1.pdf")
 text <- unlist(strsplit(text,"[.]"))
 text <- tibble(sentence = text)
+
+text$sentence <- text$sentence %>%
+  removePunctuation() %>%
+  stripWhitespace() %>%
+  removeNumbers()
 
 #Tokenizar texto (separar em palavras) e remover stop words
 tokens <- text %>%
