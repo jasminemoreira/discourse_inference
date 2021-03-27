@@ -27,6 +27,7 @@ library(wordcloud)
 library(tidyr)
 library(widyr)
 library(tm)
+library(topicmodels)
 
 #Carregar stop words
 stopwords_pt <- read_delim("C:\\Users\\jasmi\\OneDrive\\Área de Trabalho\\PLN RV\\stopwords.csv",
@@ -163,3 +164,36 @@ affin <- tokens %>%
 
 ggplot(affin, aes(index,sentiment))+
   geom_col(show.legend = TRUE)
+
+
+#Análise de tópicos (Alocação Latente de Dirichlet - LDA)
+dtm <- tokens %>%
+  count(linenumber,word, sort=TRUE) %>%
+  cast_dtm(linenumber,word,n)
+
+corpus_lda <- LDA(dtm, k = 7, control = list(seed = 1234))
+get_terms(corpus_lda, 10)
+
+corpus_topics <- tidy(corpus_lda,matrix="beta")
+corpus_top_terms <- corpus_topics %>%
+  group_by(topic) %>%
+  top_n(15,beta) %>%
+  arrange(topic, -beta) %>%
+  do(head(., n = 15)) %>%
+  ungroup() %>%
+  mutate(term=reorder(term,beta)) %>%
+  mutate(order = row_number())
+
+corpus_top_terms %>%
+  ggplot(aes(order, beta, fill = factor(topic))) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  xlab("Termos") +
+  ylab("Beta") +
+  scale_x_continuous(
+    breaks = corpus_top_terms$order,
+    labels = corpus_top_terms$term,
+    expand = c(0,0),
+    trans = "reverse"
+  )+
+  coord_flip()
